@@ -1,0 +1,53 @@
+开始测试
+1. 用ffmpeg向boliving服务器推流
+推流可以选择转码和不转码两种方式
+1）不转码方式推流
+ffmpeg -re -stream_loop -1 -i culture.mov -rtsp_transport tcp -vcodec copy -acodec copy -f rtsp rtsp://localhost:1554/live/livestream
+参数解析：
+	-stream_loop -1 ：无线循环推流
+	culture.mov  :源文件
+	localhost：服务器的地址，1935：rtmp监听的端口
+	-b 1M 表示推的流的码率是1Mbps
+	live/livestream：存储流的路径
+
+2）转码方式推流
+ffmpeg -re -stream_loop -1 -i culture.mov -rtsp_transport tcp -vcodec libx264 -preset fast -profile:v baseline -tune zerolatency -x264-params keyint=10:min-keyint=5 -acodec copy -b 1M -f rtsp rtsp://localhost:1554/live/livestream
+参数解析：
+	-stream_loop -1 ：无线循环推流
+	culture.mov  :源文件
+	localhost：服务器的地址，1935：rtmp监听的端口
+	-b 1M ：推的流的码率是1Mbps
+	live/livestream：存储流的路径
+注：转码方式需要ffmpeg支持x264编解码，如果缺少，需要下载相应x264库，然后再重新编译安装ffmpeg，具体可百度。
+如果要测试推流有没有成功，可用ffplay去拉流并播放：ffplay rtsp://localhost:1554/live/livestream
+
+2. 拉流
+切换到srs-bench文件下的obj文件，执行：
+./sb_rtmp_load -c 100 -r rtmp://localhost:1935/live/livestream -m 5
+参数解析：
+-c 表示连接数，100表示拉100个流
+-r 连接地址 ，默认需要写固定地址，我是根据推流代码，自己改造了下，可以每个任务
+拉一个流
+-m  报告时间，单位s,5就代表5秒报告一次
+然后在boliving后台程序中，可以看到服务器的状态，比如cpu，内存，带宽, 订阅流推流数等信息。
+
+二.  测试录制功能
+1.录制视频路数测试。（包括混录录制数量）
+推送10路流，20路流，50路流。调用批量录制接口。
+1）首先我们要推流到boliving服务器，如果我们想要推多路流，可用下面的脚本来推
+#!/bin/bash
+
+for j in {0..50}
+do
+    ffmpeg -re -stream_loop -1 -i ../下载/culture.mov -vcodec copy -acodec copy -b 1M -f rtsp rtsp://localhost:1554/live/livestream${j} &
+done
+注意上面推多路流没有用转码功能推，原因是转码会消耗大量的cpu资源，推几路流就会把cpu支援耗光，所以不建议用转码方式推多路流。
+上面推了50流，并且在后台运行（注意：因为是无限循环推流，所以如果要暂停推流，需要去杀死进程，这种方式比较麻烦，建议停止boliving服务器再重启，不去管后台这些推流的进程）
+
+2. 用Postman工具录制推的流
+Postman是一个收发包工具，具体安装可百度。
+可以先推1路流，然后用Postman去录制1，10，20，50，100，200，300路进行测试
+1）需要用Post去给服务器发送Json数据，如下面截图所示：
+
+批量杀死进程
+ps -ef|grep LOCAL=NO|grep -v grep|cut -c 9-15|xargs kill -9
