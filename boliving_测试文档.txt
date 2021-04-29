@@ -48,6 +48,7 @@ done
 Postman是一个收发包工具，具体安装可百度。
 可以先推1路流，然后用Postman去录制1，10，20，50，100，200，300路进行测试
 1）需要用Post去给服务器发送Json数据，如下面截图所示：
+{"taskId":"uuid-123456","recordMode":"SINGLE","storePath":"./","segmentMode":"DURATION","segmentValue":3600,"logicTasks":[{"append":true,"fileNamePrefix":"uuid-1","resources":[{"url":"rtsp://localhost:1554/live/livestream","x":1,"y":2,"width":400,"height":300}]}]}
 
 批量杀死进程
 ps -ef|grep LOCAL=NO|grep -v grep|cut -c 9-15|xargs kill -9
